@@ -4,7 +4,8 @@ import { useAtom, WritableAtom } from 'jotai'
 import type { SetStateAction } from '../core/types'
 
 export function useAtomDevtools<Value>(
-  anAtom: WritableAtom<Value, SetStateAction<Value>>
+  anAtom: WritableAtom<Value, SetStateAction<Value>>,
+  name = anAtom.debugLabel
 ) {
   let extension: any
   try {
@@ -26,7 +27,7 @@ export function useAtomDevtools<Value>(
 
   useEffect(() => {
     if (extension) {
-      const name = `${anAtom.key}:${anAtom.debugLabel ?? '<no debugLabel>'}`
+      const name = `${name}:${anAtom.key}`
       devtools.current = extension.connect({ name })
       const unsubscribe = devtools.current.subscribe((message: any) => {
         if (message.type === 'DISPATCH' && message.state) {
