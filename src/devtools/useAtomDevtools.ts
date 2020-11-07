@@ -5,7 +5,7 @@ import type { SetStateAction } from '../core/types'
 
 export function useAtomDevtools<Value>(
   anAtom: WritableAtom<Value, SetStateAction<Value>>,
-  name = anAtom.debugLabel
+  instanceName = anAtom.debugLabel
 ) {
   let extension: any
   try {
@@ -27,7 +27,7 @@ export function useAtomDevtools<Value>(
 
   useEffect(() => {
     if (extension) {
-      const name = `${name}:${anAtom.key}`
+      const name = `${instanceName}:${anAtom.key}`
       devtools.current = extension.connect({ name })
       const unsubscribe = devtools.current.subscribe((message: any) => {
         if (message.type === 'DISPATCH' && message.state) {
