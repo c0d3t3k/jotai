@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { useAtom, WritableAtom } from 'jotai'
+import { useEffect, useRef, useMemo } from 'react'
+import { useAtom, WritableAtom, Atom, atom } from 'jotai'
 
 type Config = {
   instanceID?: number
@@ -29,8 +29,16 @@ type Extension = {
   connect: (options?: Config) => ConnectionResult
 }
 
+
+export function useDiscardAtom<Value>(readOnlyAtom: Atom<Value>): WritableAtom<Value, Value> {
+    return useMemo(() => atom(
+        get => get(readOnlyAtom),
+        (_get, _set, _argIgnored: { count: number }) => {} // discard write function
+    ), [readOnlyAtom])
+}
+
 export function useAtomDevtools<Value>(
-  anAtom: WritableAtom<Value, Value>,
+  anAtom: WritableAtom<Value, Value> | Atom<Value>,
   name?: string
 ) {
   let extension: Extension | undefined
@@ -46,7 +54,7 @@ export function useAtomDevtools<Value>(
     }
   }
 
-  const [value, setValue] = useAtom(anAtom)
+  const [value, setValue] = useAtom(anAtom as WritableAtom<Value, Value>)
   const lastValue = useRef(value)
   const isTimeTraveling = useRef(false)
   const devtools = useRef<ConnectionResult & { shouldInit?: boolean }>()
@@ -65,7 +73,9 @@ export function useAtomDevtools<Value>(
           ) {
             isTimeTraveling.current = true
           }
-          setValue(JSON.parse(message.state))
+          if((anAtom as any).write) {
+            setValue(JSON.parse(message.state).value)
+          }
         } else if (
           message.type === 'DISPATCH' &&
           message.payload?.type === 'COMMIT'
@@ -89,7 +99,9 @@ export function useAtomDevtools<Value>(
       } else {
         devtools.current.send(
           `${atomName} - ${new Date().toLocaleString()}`,
-          value
+          { 
+            value: value
+          }
         )
       }
     }
